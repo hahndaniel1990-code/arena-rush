@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a1633">
+  <title>Arena Rush</title>
+  <link rel="icon" href="Arena%20rush%20Logo.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="game" aria-label="Spielfeld"></canvas>
+
+  <!-- Anzeige während des Laufs -->
+  <div id="hud" class="hidden">
+    <div class="hud-col">
+      <div class="pill"><span class="label">Punkte</span><span id="hud-score">0</span></div>
+      <div class="mini">Rekord <b id="hud-best">0</b></div>
+    </div>
+    <div class="hud-col center">
+      <div id="hud-player" class="pill player-pill hidden">Spieler 1</div>
+      <div id="hud-boosts" class="boosts"></div>
+    </div>
+    <div class="hud-col right">
+      <div class="pill row"><span>🪙 <b id="hud-taler">0</b></span><span>🏆 <b id="hud-trophies">0</b></span></div>
+      <button id="btn-pause" class="icon-btn" aria-label="Pause">❚❚</button>
+    </div>
+  </div>
+
+  <!-- Startbildschirm -->
+  <section id="screen-start" class="screen">
+    <div class="card">
+      <img class="logo" src="Arena%20rush%20Logo.png" alt="Arena Rush"
+           onerror="this.remove(); document.getElementById('title-text').hidden = false;">
+      <h1 id="title-text" hidden>Arena<span>Rush</span></h1>
+      <p class="tagline">Der Endlos-Lauf durch Stadion, Eishalle und Basketball-Arena!</p>
+
+      <div class="hero">
+        <canvas id="start-char" class="hero-cv"></canvas>
+        <div class="hero-text">
+          <b id="start-char-name">Luis</b>
+          <small id="start-char-level"></small>
+          <small id="start-char-ability"></small>
+        </div>
+      </div>
+
+      <button id="btn-solo" class="primary big">Los geht's!</button>
+      <button id="btn-chars">Charaktere, Skins &amp; Upgrades</button>
+      <p class="meta">Rekord <b id="start-best">0</b> · 🪙 <b class="taler">0</b> Arena-Taler</p>
+
+      <div class="puzzle-box">
+        <div id="puzzle" class="puzzle" aria-hidden="true"></div>
+        <div class="puzzle-text">
+          <b>Arena-Puzzle <span id="puzzle-count">0/6</span></b>
+          <small>Sammle unterwegs alle Teile: +1.000 Punkte und +100 Arena-Taler!</small>
+        </div>
+      </div>
+
+      <label class="toggle">
+        <input type="checkbox" id="opt-coach" checked>
+        <span>🧢 Trainer-Tipps während des Laufs</span>
+      </label>
+
+      <details class="help">
+        <summary>Steuerung &amp; Tipps</summary>
+        <ul>
+          <li><b>Wischen ← →</b> oder Pfeiltasten: Spur wechseln</li>
+          <li><b>Wischen ↑</b>: springen (über Banden, Bälle, Pucks)</li>
+          <li><b>Wischen ↓</b>: ducken (unter Fan-Bannern durch)</li>
+          <li>Rasenmäher, Eismaschinen, Putzcrews und Gäste-Bänke: ausweichen!</li>
+          <li>In jedem Stadion fällt einmal ein Ball oder Puck vom Himmel: schnapp ihn und <b>wische ↑ zum Torschuss</b>, wenn der Torwart woanders steht.</li>
+          <li>Feder-Schuhe 👟 lassen dich sogar über große Hindernisse springen, das Megafon 📣 verdoppelt deine Punkte.</li>
+        </ul>
+      </details>
+
+      <button id="btn-duo" class="link-btn">Duell mit Freund*in (2 Spieler, abwechselnd)</button>
+      <p id="sponsor-line" class="sponsors"></p>
+    </div>
+  </section>
+
+  <!-- Charaktermenü -->
+  <section id="screen-chars" class="screen hidden">
+    <div class="card wide">
+      <div class="chars-head">
+        <h2>Charaktere</h2>
+        <span class="meta">🪙 <b class="taler">0</b> Arena-Taler</span>
+      </div>
+      <p id="chars-slot" class="slot hidden"></p>
+      <div id="char-grid" class="char-grid"></div>
+      <div id="char-detail" class="char-detail"></div>
+      <p id="char-msg" class="msg" aria-live="polite"></p>
+      <button id="btn-char-select" class="primary">Auswählen</button>
+      <button id="btn-chars-back">Zurück</button>
+    </div>
+  </section>
+
+  <!-- Game over -->
+  <section id="screen-over" class="screen hidden">
+    <div class="card">
+      <h2 id="over-title">Abpfiff!</h2>
+      <p class="big" id="over-score">0</p>
+      <p id="over-new" class="badge" hidden>Neuer Rekord!</p>
+      <div class="facts">
+        <span>📏 <b id="over-dist">0</b> m</span>
+        <span>🪙 <b id="over-coins">0</b></span>
+        <span>🏆 <b id="over-trophies">0</b></span>
+        <span>⚽ <b id="over-goals">0</b> Tore</span>
+      </div>
+      <p class="earn" id="over-earn"></p>
+      <p id="over-coach" class="coach-tip" hidden><b id="over-coach-name">🧢 Trainer Klaus:</b> <span id="over-coach-text"></span></p>
+      <div id="over-unlocks" class="unlocks"></div>
+      <button id="btn-restart" class="primary big">Nochmal!</button>
+      <button id="btn-over-chars">Charaktere, Skins &amp; Upgrades</button>
+      <button id="btn-over-menu">Menü</button>
+    </div>
+  </section>
+
+  <!-- Duell: Übergabe an Spieler 2 -->
+  <section id="screen-handover" class="screen hidden">
+    <div class="card">
+      <h2>Spieler 1 ist fertig</h2>
+      <p class="big" id="handover-score">0</p>
+      <div id="handover-unlocks" class="unlocks"></div>
+      <p>Gib das Gerät an <b>Spieler 2</b> weiter.</p>
+      <div class="hero">
+        <canvas id="p2-char" class="hero-cv"></canvas>
+        <div class="hero-text"><b id="p2-char-name"></b><small id="p2-char-ability"></small></div>
+      </div>
+      <button id="btn-p2-chars">Charakter wählen</button>
+      <button id="btn-p2" class="primary big p2">Spieler 2: Los!</button>
+    </div>
+  </section>
+
+  <!-- Duell: Ergebnis -->
+  <section id="screen-result" class="screen hidden">
+    <div class="card">
+      <h2 id="result-title">Ergebnis</h2>
+      <div class="scores">
+        <div class="score-box" id="result-box-1"></div>
+        <div class="score-box" id="result-box-2"></div>
+      </div>
+      <div id="result-unlocks" class="unlocks"></div>
+      <button id="btn-rematch" class="primary">Revanche</button>
+      <button id="btn-result-menu">Menü</button>
+    </div>
+  </section>
+
+  <!-- Pause -->
+  <section id="screen-pause" class="screen hidden">
+    <div class="card">
+      <h2>Pause</h2>
+      <button id="btn-resume" class="primary big">Weiter</button>
+      <button id="btn-quit">Lauf abbrechen</button>
+    </div>
+  </section>
+
+  <script src="data.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
