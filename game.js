@@ -2209,8 +2209,7 @@
     },
     puck(c, o) {
       dangerRing(c, o);
-      ell(c, 0, -8, 24, 9); fs(c, '#111', LW);
-      ell(c, 0, -12, 24, 9); fs(c, '#2b2b2b', LW);
+      drawPuck(c, 0, -2, 'danger');
       speedLines(c, -10);
     },
     coin(c, o) {
@@ -2325,7 +2324,7 @@
         c.beginPath(); c.moveTo(0, y - 30); c.lineTo(0, y - 60); c.stroke();
       }
       ell(c, 0, y, 40, 40); c.fillStyle = 'rgba(255,230,120,0.25)'; c.fill();
-      if (o.kind === 'ice') { ell(c, 0, y + 6, 22, 9); fs(c, '#111', LW); ell(c, 0, y + 2, 22, 9); fs(c, '#2b2b2b', LW); }
+      if (o.kind === 'ice') drawPuck(c, 0, y + 6, 'gold');
       else drawBall(c, 0, y, 24, o.kind === 'basket' ? 'basket' : 'football', o.t * 5);
       sparkle(c, o.t, y);
     },
@@ -2400,6 +2399,25 @@
   function speedLines(c, y) {
     c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 3;
     for (const x of [-14, 0, 14]) { c.beginPath(); c.moveTo(x, y - 30); c.lineTo(x, y - 48); c.stroke(); }
+  }
+
+  // Puck: 'danger' = rot mit bösen Augen (Hindernis), 'gold' = goldener Bonus-Puck, sonst schwarz
+  function drawPuck(c, x, y, mode) {
+    const side = mode === 'danger' ? '#7a1010' : mode === 'gold' ? '#c98a00' : '#111';
+    const top = mode === 'danger' ? '#e53935' : mode === 'gold' ? '#ffd23f' : '#2b2b2b';
+    c.save(); c.translate(x, y);
+    ell(c, 0, -6, 24, 9); fs(c, side, LW);
+    ell(c, 0, -10, 24, 9); fs(c, top, LW);
+    if (mode === 'danger') {
+      c.fillStyle = '#ffffff';
+      ell(c, -8, -11, 5, 4.5); c.fill(); ell(c, 8, -11, 5, 4.5); c.fill();
+      c.fillStyle = '#111';
+      ell(c, -7, -10.5, 2.2, 2.4); c.fill(); ell(c, 7, -10.5, 2.2, 2.4); c.fill();
+      c.strokeStyle = '#111'; c.lineWidth = 2.5;
+      c.beginPath(); c.moveTo(-14, -17); c.lineTo(-4, -13); c.stroke();
+      c.beginPath(); c.moveTo(14, -17); c.lineTo(4, -13); c.stroke();
+    }
+    c.restore();
   }
 
   // Rot pulsierender Warnring am Boden: Bälle und Pucks als Hindernis sind gefährlich, kein Bonus
