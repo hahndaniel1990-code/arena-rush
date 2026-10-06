@@ -2198,17 +2198,17 @@
     },
     ball(c, o) {
       const bounce = Math.abs(Math.sin(o.t * 7)) * 18;
-      shadow(c, 20);
-      drawBall(c, 0, -22 - bounce, 22, 'football', o.t * 12);
+      dangerRing(c, o);
+      drawBall(c, 0, -22 - bounce, 22, 'football', o.t * 12, false, true);
       speedLines(c, -22 - bounce);
     },
     bball(c, o) {
       const bounce = Math.abs(Math.sin(o.t * 6)) * 22;   // flach halten: passt zur Sprung-Kollision
-      shadow(c, 20);
-      drawBall(c, 0, -22 - bounce, 22, 'basket', o.t * 8);
+      dangerRing(c, o);
+      drawBall(c, 0, -22 - bounce, 22, 'basket', o.t * 8, false, true);
     },
     puck(c, o) {
-      shadow(c, 24);
+      dangerRing(c, o);
       ell(c, 0, -8, 24, 9); fs(c, '#111', LW);
       ell(c, 0, -12, 24, 9); fs(c, '#2b2b2b', LW);
       speedLines(c, -10);
@@ -2402,10 +2402,40 @@
     for (const x of [-14, 0, 14]) { c.beginPath(); c.moveTo(x, y - 30); c.lineTo(x, y - 48); c.stroke(); }
   }
 
-  function drawBall(c, x, y, r, kind, rot, gold) {
+  // Rot pulsierender Warnring am Boden: Bälle und Pucks als Hindernis sind gefährlich, kein Bonus
+  function dangerRing(c, o) {
+    shadow(c, 20);
+    const a = 0.45 + Math.sin(o.t * 10) * 0.2;
+    c.save();
+    ell(c, 0, 0, 30, 10);
+    c.strokeStyle = `rgba(255,50,50,${a})`; c.lineWidth = 4; c.stroke();
+    c.restore();
+  }
+
+  // danger = gefährlicher Ball (rot getönt mit bösen Augen), damit er nicht wie ein Bonus aussieht
+  function drawBall(c, x, y, r, kind, rot, gold, danger) {
     c.save();
     c.translate(x, y);
     ell(c, 0, 0, r, r);
+    if (danger) {
+      fs(c, kind === 'basket' ? '#b3261e' : '#e53935', LW);
+      c.save(); ell(c, 0, 0, r, r); c.clip(); c.rotate(rot);
+      c.strokeStyle = '#4a0d0d'; c.lineWidth = 2.5;
+      c.beginPath(); c.moveTo(-r, 0); c.lineTo(r, 0); c.moveTo(0, -r); c.lineTo(0, r); c.stroke();
+      c.restore();
+      // böse Augen
+      c.fillStyle = '#ffffff';
+      ell(c, -r * 0.35, -r * 0.1, r * 0.22, r * 0.26); c.fill();
+      ell(c, r * 0.35, -r * 0.1, r * 0.22, r * 0.26); c.fill();
+      c.fillStyle = '#111';
+      ell(c, -r * 0.3, -r * 0.05, r * 0.1, r * 0.12); c.fill();
+      ell(c, r * 0.3, -r * 0.05, r * 0.1, r * 0.12); c.fill();
+      c.strokeStyle = '#111'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(-r * 0.62, -r * 0.5); c.lineTo(-r * 0.12, -r * 0.28); c.stroke();
+      c.beginPath(); c.moveTo(r * 0.62, -r * 0.5); c.lineTo(r * 0.12, -r * 0.28); c.stroke();
+      c.restore();
+      return;
+    }
     if (kind === 'basket') {
       fs(c, gold ? '#ffc928' : '#ff8a1f', LW);
       c.save(); ell(c, 0, 0, r, r); c.clip(); c.rotate(rot);
