@@ -2088,10 +2088,16 @@
     ad(c, o) {
       const sp = SPONSORS[o.sp || 0];
       shadow(c, 46);
-      box3d(c, -42, -40, 84, 40, 12, sp.bg);
-      c.fillStyle = shade(sp.bg, -0.3);
-      c.fillRect(-40, -10, 80, 8);
-      comicText(c, sp.short, 0, -22, 19, sp.fg, 76);
+      // Bande als LED-Werbetafel auf Füßen, mit rot-weißem Warnstreifen (= Hindernis, drüberspringen)
+      for (const s of [-1, 1]) { rr(c, s * 32 - 5, -6, 10, 6, 2); fs(c, '#555b66', LW / 2); }
+      box3d(c, -42, -44, 84, 38, 12, sp.bg);
+      rr(c, -37, -40, 74, 24, 3); fs(c, shade(sp.bg, -0.35), LW / 2);
+      c.strokeStyle = sp.fg; c.lineWidth = 2; c.stroke();
+      comicText(c, sp.short, 0, -31, 15, sp.fg, 68);
+      const sub = sp.name.indexOf(' ') > 0 ? sp.name.slice(sp.name.indexOf(' ') + 1) : 'ARENA RUSH';
+      comicText(c, sub.toUpperCase(), 0, -21, 6.5, '#ffffff', 68);
+      for (let i = 0; i < 6; i++) { c.fillStyle = i % 2 ? '#ffffff' : '#ff3b3b'; c.fillRect(-42 + i * 14, -13, 14, 7); }
+      rr(c, -42, -13, 84, 7, 2); fs(c, null, LW / 2);
     },
     hurdle(c) {
       shadow(c, 44);
@@ -2198,19 +2204,18 @@
     },
     ball(c, o) {
       const bounce = Math.abs(Math.sin(o.t * 7)) * 18;
-      shadow(c, 20);
-      drawBall(c, 0, -22 - bounce, 22, 'football', o.t * 12);
+      dangerRing(c, o);
+      drawBall(c, 0, -22 - bounce, 22, 'football', o.t * 12, false, true);
       speedLines(c, -22 - bounce);
     },
     bball(c, o) {
       const bounce = Math.abs(Math.sin(o.t * 6)) * 22;   // flach halten: passt zur Sprung-Kollision
-      shadow(c, 20);
-      drawBall(c, 0, -22 - bounce, 22, 'basket', o.t * 8);
+      dangerRing(c, o);
+      drawBall(c, 0, -22 - bounce, 22, 'basket', o.t * 8, false, true);
     },
     puck(c, o) {
-      shadow(c, 24);
-      ell(c, 0, -8, 24, 9); fs(c, '#111', LW);
-      ell(c, 0, -12, 24, 9); fs(c, '#2b2b2b', LW);
+      dangerRing(c, o);
+      drawPuck(c, 0, -2, 'danger');
       speedLines(c, -10);
     },
     coin(c, o) {
@@ -2325,7 +2330,7 @@
         c.beginPath(); c.moveTo(0, y - 30); c.lineTo(0, y - 60); c.stroke();
       }
       ell(c, 0, y, 40, 40); c.fillStyle = 'rgba(255,230,120,0.25)'; c.fill();
-      if (o.kind === 'ice') { ell(c, 0, y + 6, 22, 9); fs(c, '#111', LW); ell(c, 0, y + 2, 22, 9); fs(c, '#2b2b2b', LW); }
+      if (o.kind === 'ice') drawPuck(c, 0, y + 6, 'gold');
       else drawBall(c, 0, y, 24, o.kind === 'basket' ? 'basket' : 'football', o.t * 5);
       sparkle(c, o.t, y);
     },
@@ -2402,10 +2407,59 @@
     for (const x of [-14, 0, 14]) { c.beginPath(); c.moveTo(x, y - 30); c.lineTo(x, y - 48); c.stroke(); }
   }
 
-  function drawBall(c, x, y, r, kind, rot, gold) {
+  // Puck: 'danger' = rot mit bösen Augen (Hindernis), 'gold' = goldener Bonus-Puck, sonst schwarz
+  function drawPuck(c, x, y, mode) {
+    const side = mode === 'danger' ? '#7a1010' : mode === 'gold' ? '#c98a00' : '#111';
+    const top = mode === 'danger' ? '#e53935' : mode === 'gold' ? '#ffd23f' : '#2b2b2b';
+    c.save(); c.translate(x, y);
+    ell(c, 0, -6, 24, 9); fs(c, side, LW);
+    ell(c, 0, -10, 24, 9); fs(c, top, LW);
+    if (mode === 'danger') {
+      c.fillStyle = '#ffffff';
+      ell(c, -8, -11, 5, 4.5); c.fill(); ell(c, 8, -11, 5, 4.5); c.fill();
+      c.fillStyle = '#111';
+      ell(c, -7, -10.5, 2.2, 2.4); c.fill(); ell(c, 7, -10.5, 2.2, 2.4); c.fill();
+      c.strokeStyle = '#111'; c.lineWidth = 2.5;
+      c.beginPath(); c.moveTo(-14, -17); c.lineTo(-4, -13); c.stroke();
+      c.beginPath(); c.moveTo(14, -17); c.lineTo(4, -13); c.stroke();
+    }
+    c.restore();
+  }
+
+  // Rot pulsierender Warnring am Boden: Bälle und Pucks als Hindernis sind gefährlich, kein Bonus
+  function dangerRing(c, o) {
+    shadow(c, 20);
+    const a = 0.45 + Math.sin(o.t * 10) * 0.2;
+    c.save();
+    ell(c, 0, 0, 30, 10);
+    c.strokeStyle = `rgba(255,50,50,${a})`; c.lineWidth = 4; c.stroke();
+    c.restore();
+  }
+
+  // danger = gefährlicher Ball (rot getönt mit bösen Augen), damit er nicht wie ein Bonus aussieht
+  function drawBall(c, x, y, r, kind, rot, gold, danger) {
     c.save();
     c.translate(x, y);
     ell(c, 0, 0, r, r);
+    if (danger) {
+      fs(c, kind === 'basket' ? '#b3261e' : '#e53935', LW);
+      c.save(); ell(c, 0, 0, r, r); c.clip(); c.rotate(rot);
+      c.strokeStyle = '#4a0d0d'; c.lineWidth = 2.5;
+      c.beginPath(); c.moveTo(-r, 0); c.lineTo(r, 0); c.moveTo(0, -r); c.lineTo(0, r); c.stroke();
+      c.restore();
+      // böse Augen
+      c.fillStyle = '#ffffff';
+      ell(c, -r * 0.35, -r * 0.1, r * 0.22, r * 0.26); c.fill();
+      ell(c, r * 0.35, -r * 0.1, r * 0.22, r * 0.26); c.fill();
+      c.fillStyle = '#111';
+      ell(c, -r * 0.3, -r * 0.05, r * 0.1, r * 0.12); c.fill();
+      ell(c, r * 0.3, -r * 0.05, r * 0.1, r * 0.12); c.fill();
+      c.strokeStyle = '#111'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(-r * 0.62, -r * 0.5); c.lineTo(-r * 0.12, -r * 0.28); c.stroke();
+      c.beginPath(); c.moveTo(r * 0.62, -r * 0.5); c.lineTo(r * 0.12, -r * 0.28); c.stroke();
+      c.restore();
+      return;
+    }
     if (kind === 'basket') {
       fs(c, gold ? '#ffc928' : '#ff8a1f', LW);
       c.save(); ell(c, 0, 0, r, r); c.clip(); c.rotate(rot);
