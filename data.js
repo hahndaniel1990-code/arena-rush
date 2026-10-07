@@ -242,6 +242,11 @@ window.ARENA_DATA = (() => {
     megafon: { name: 'Megafon ×2', icon: '📣' },
   };
 
+  // Comeback-Token: belebt nach einem Zusammenstoß mitten im Lauf wieder.
+  // price: Preis in Arena-Talern · max: so viele Token kann man gleichzeitig besitzen
+  // perRun: so oft darf man pro Lauf wiederbeleben · rare: Chance pro Bonus-Platz (sehr selten, max. 1 pro Lauf)
+  const REVIVE = { name: 'Comeback-Token', icon: '💎', price: 500, max: 9, perRun: 2, rare: 0.006 };
+
   // Trainer, der während des Laufs hilfreiche Tipps reinruft
   const COACH = {
     name: 'Trainer Klaus',
@@ -302,5 +307,5 @@ window.ARENA_DATA = (() => {
   const UPGRADE_COSTS = [50, 100, 175, 275, 400];
   const MAX_UPGRADE = 5;
 
-  return { SPONSORS, VENUES, CHARACTERS, PICKUPS, GOAL_REWARD, BOOSTERS, SKINS, UPGRADE_COSTS, MAX_UPGRADE, COACH, COACH_TIPS };
+  return { SPONSORS, VENUES, CHARACTERS, PICKUPS, GOAL_REWARD, BOOSTERS, REVIVE, SKINS, UPGRADE_COSTS, MAX_UPGRADE, COACH, COACH_TIPS };
 })();

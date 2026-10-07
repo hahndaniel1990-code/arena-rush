@@ -2,7 +2,7 @@
 
 (() => {
   const D = window.ARENA_DATA;
-  const { SPONSORS, VENUES, CHARACTERS, PICKUPS, GOAL_REWARD, BOOSTERS, SKINS, UPGRADE_COSTS, MAX_UPGRADE, COACH, COACH_TIPS } = D;
+  const { SPONSORS, VENUES, CHARACTERS, PICKUPS, GOAL_REWARD, BOOSTERS, REVIVE, SKINS, UPGRADE_COSTS, MAX_UPGRADE, COACH, COACH_TIPS } = D;
 
   const STATS = [
     { key: 'tempo', name: 'Tempo' },
@@ -86,7 +86,7 @@
 
   function defaultSave() {
     return {
-      best: 0, taler: 0, stats: Object.assign({}, STAT_DEFAULTS),
+      best: 0, taler: 0, tokens: 0, stats: Object.assign({}, STAT_DEFAULTS),
       unlocked: [], upgrades: {}, xp: {}, skins: {}, puzzle: [],
       selected: ['luis', 'daniel'],
       settings: { coach: true },
@@ -100,6 +100,7 @@
       if (s && typeof s === 'object') {
         d.best = Number(s.best) || 0;
         d.taler = Number(s.taler) || 0;
+        d.tokens = Math.min(Math.max(Math.floor(Number(s.tokens)) || 0, 0), REVIVE.max);
         d.stats = Object.assign(d.stats, s.stats);
         if (Array.isArray(s.unlocked)) d.unlocked = s.unlocked.filter((id) => charById(id));
         for (const k of ['upgrades', 'xp', 'skins']) if (s[k] && typeof s[k] === 'object') d[k] = s[k];
@@ -234,7 +235,7 @@
       coins: 0, scarves: 0, trophies: 0, boostersGot: 0, goals: 0, jumps: 0, ducks: 0, iceMeters: 0, puzzleGot: 0,
       venue: 0, pendingVenue: 0, eventDone: new Set(), event: null,
       nextRow: 1.4, objects: [], fx: [], feed: [], confetti: [],
-      crashT: 0, crashText: '', menuT: 0,
+      crashT: 0, crashText: '', menuT: 0, revives: 0, reviveSpawned: false,
       banner: { sub: 'Willkommen im', text: VENUES[0].name, t: 2.6 },
       fairplay: !!ch && ch.ability.id === 'fairplay_shield',
       player: { lane: 1, x: 0, jumpT: 0, jumpDur: 1, jumpPeak: 1, jumpBase: 0, airJumps: 0, duckT: 0, h: 0 },
@@ -344,7 +345,7 @@
     coin: { collect: true }, ticket: { collect: true }, scarf: { collect: true }, medal: { collect: true },
     jersey: { collect: true }, trophy: { collect: true }, goldball: { collect: true }, puzzle: { collect: true },
     spring: { collect: true }, magnet: { collect: true }, shield: { collect: true }, megafon: { collect: true },
-    dropball: { collect: true },
+    dropball: { collect: true }, revive: { collect: true },
     gate: {}, goal: {}, shot: {},
   };
   const MOVER_BOOST = { ball: 0.5, puck: 0.8, bball: 0.4, mower: 0.25, icemachine: 0.15 };
@@ -403,6 +404,8 @@
   function maybeBonus(lane, z) {
     const g = game, r = Math.random();
     const puzzleMissing = save.puzzle.length < PUZZLE_PIECES && g.puzzleGot < 2;
+    // Comeback-Token: ganz selten, höchstens einer pro Lauf
+    if (r < REVIVE.rare && !g.reviveSpawned) { g.reviveSpawned = true; return addObj('revive', lane, z, { air: 0.4 }); }
     if (r < 0.035 && puzzleMissing) return addObj('puzzle', lane, z, { air: 0.4 });
     if (r < 0.12) return addObj(pick(['spring', 'magnet', 'shield', 'megafon']), lane, z, { air: 0.4 });
     if (r < 0.16) return addObj('trophy', lane, z, { air: 0.4 });
@@ -556,6 +559,14 @@
       if (o.type !== 'coin' && o.type !== 'ticket') {
         fxSmall(`${lucky ? 'GLÜCK! ' : ''}${pk.name} +${fmt(pk.points * mult * P.scoreMult * (g.boost.megafon > 0 ? 2 : 1))}`);
       }
+      return;
+    }
+    if (o.type === 'revive') {
+      if (save.tokens < REVIVE.max) save.tokens++;
+      persist();
+      fxText(`${REVIVE.icon} COMEBACK-TOKEN!`, '#7fd7ff', 30);
+      fxText('Belebt dich nach einem Crash wieder', '#ffffff', 16);
+      burstConfetti(W / 2, H * 0.35, 50);
       return;
     }
     if (o.type === 'puzzle') {
@@ -834,6 +845,75 @@
     show(null);
   }
 
+  // ---------- Comeback-Token: Wiederbelebung nach einem Crash ----------
+  const canBuyToken = () => save.tokens < REVIVE.max && save.taler >= REVIVE.price;
+
+  // Nach dem Crash: Angebot zum Wiederbeleben, sonst direkt das Ende des Laufs
+  function afterCrash() {
+    const g = game;
+    if (g.revives < REVIVE.perRun && (save.tokens > 0 || canBuyToken())) {
+      g.state = 'revive';
+      renderRevive();
+      show('revive');
+    } else {
+      g.state = 'done';
+      endRun();
+    }
+  }
+
+  function renderRevive() {
+    const g = game;
+    $('revive-left').textContent = `Noch ${REVIVE.perRun - g.revives}× pro Lauf möglich`;
+    $('revive-score').textContent = fmt(g.score);
+    const has = save.tokens > 0;
+    $('revive-have').textContent = `${REVIVE.icon} Token: ${save.tokens}`;
+    const use = $('btn-revive-use');
+    use.textContent = has ? `${REVIVE.icon} Token einsetzen & weiterlaufen` : `${REVIVE.icon} Token kaufen (${fmt(REVIVE.price)} 🪙) & weiterlaufen`;
+    use.disabled = !has && !canBuyToken();
+  }
+
+  function reviveNow() {
+    const g = game;
+    if (!g || g.state !== 'revive') return;
+    if (save.tokens > 0) save.tokens--;
+    else if (canBuyToken()) save.taler -= REVIVE.price;
+    else return;
+    persist();
+    g.revives++;
+    // Gefahr in der Nähe wegräumen, kurz unverwundbar, dann geht's weiter
+    for (const o of g.objects) {
+      const info = TYPES[o.type];
+      if (info && info.hit && o.z < 16 && o.z > -4) o.dead = true;
+    }
+    const p = g.player;
+    p.jumpT = 0; p.h = 0; p.duckT = 0;
+    g.boost.shield = Math.max(g.boost.shield, 3);
+    g.crashKind = null;
+    g.crashT = 0;
+    g.state = 'run';
+    touch = null;
+    acc = 0;
+    last = performance.now();
+    show(null);
+    fxText('COMEBACK!', '#7fd7ff', 36);
+    burstConfetti(W / 2, H * 0.35, 60);
+  }
+
+  function giveUp() {
+    if (!game || game.state !== 'revive') return;
+    game.state = 'done';
+    endRun();
+  }
+
+  function buyToken() {
+    if (!canBuyToken()) return;
+    save.taler -= REVIVE.price;
+    save.tokens++;
+    persist();
+    renderStart();
+    updateTalerLabels();
+  }
+
   function endRun() {
     const g = game, ch = g.ch, s = g.score;
     const st = save.stats;
@@ -932,7 +1012,7 @@
     hud: $('hud'), hudPlayer: $('hud-player'), boosts: $('hud-boosts'),
     screens: {
       start: $('screen-start'), chars: $('screen-chars'), over: $('screen-over'),
-      handover: $('screen-handover'), result: $('screen-result'), pause: $('screen-pause'),
+      handover: $('screen-handover'), result: $('screen-result'), pause: $('screen-pause'), revive: $('screen-revive'),
     },
   };
   let currentScreen = 'start';
@@ -964,6 +1044,7 @@
     const parts = [];
     for (const k in g.boost) if (g.boost[k] > 0) parts.push(`${BOOSTERS[k].icon} ${Math.ceil(g.boost[k])}`);
     if (g.fairplay) parts.push('🤝 Fairplay');
+    if (save.tokens > 0) parts.push(`${REVIVE.icon} ×${save.tokens}`);
     const html = parts.map((p) => `<span>${p}</span>`).join('');
     if (hudCache.boosts !== html) { hudCache.boosts = html; ui.boosts.innerHTML = html; }
   }
@@ -994,6 +1075,9 @@
     $('start-char-level').textContent = `Level ${charLevel(ch)} · ${ch.role}`;
     $('start-char-ability').textContent = `${ch.ability.name}: ${ch.ability.desc}`;
     $('start-best').textContent = fmt(save.best);
+    $('start-tokens').textContent = save.tokens;
+    $('btn-buy-token').textContent = save.tokens >= REVIVE.max ? 'voll' : `kaufen (${fmt(REVIVE.price)} 🪙)`;
+    $('btn-buy-token').disabled = !canBuyToken();
     $('sponsor-line').innerHTML = 'Präsentiert von ' + SPONSORS.map((s) => `<b>${escapeHtml(s.name)}</b>`).join(' &amp; ');
     renderPuzzle();
   }
@@ -1169,6 +1253,9 @@
   $('btn-p2').addEventListener('click', () => { turn = 2; startRun(); });
   $('btn-rematch').addEventListener('click', () => startMatch('duo'));
   $('btn-result-menu').addEventListener('click', () => show('start'));
+  $('btn-revive-use').addEventListener('click', reviveNow);
+  $('btn-revive-quit').addEventListener('click', giveUp);
+  $('btn-buy-token').addEventListener('click', buyToken);
   $('btn-pause').addEventListener('click', pauseGame);
   $('btn-resume').addEventListener('click', resumeGame);
   $('btn-quit').addEventListener('click', () => { game = newGame('menu', null); show('start'); });
@@ -2266,6 +2353,24 @@
         c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect(-12, -26, 4, 18);
       });
     },
+    revive(c, o) {
+      floating(c, o, () => {
+        // Blauer Diamant: leuchtender Schein, Kontur, helle Facetten
+        const pulse = 1 + Math.sin(o.t * 6) * 0.08;
+        c.scale(pulse, pulse);
+        ell(c, 0, 0, 30, 30); c.fillStyle = 'rgba(80,190,255,0.30)'; c.fill();
+        const pts = (list) => { c.beginPath(); list.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); };
+        pts([[-22, -8], [-12, -22], [12, -22], [22, -8], [0, 22]]);
+        fs(c, '#2e9bff', LW);
+        pts([[-22, -8], [22, -8], [0, 22]]); c.fillStyle = '#1a6fe0'; c.fill();
+        pts([[-12, -22], [-5, -8], [-22, -8]]); c.fillStyle = '#7fd0ff'; c.fill();
+        pts([[12, -22], [5, -8], [22, -8]]); c.fillStyle = '#5ab8ff'; c.fill();
+        pts([[-12, -22], [12, -22], [5, -8], [-5, -8]]); c.fillStyle = '#b8e8ff'; c.fill();
+        pts([[-22, -8], [-12, -22], [12, -22], [22, -8], [0, 22]]); c.lineWidth = LW; c.strokeStyle = OUTLINE; c.stroke();
+        sparkle(c, o.t);
+        sparkle(c, o.t + 1.7);
+      });
+    },
     goldball(c, o) {
       floating(c, o, () => {
         drawBall(c, 0, 0, 20, VENUES[game.venue].kind === 'basket' ? 'basket' : 'football', o.t * 4, true);
@@ -2689,7 +2794,7 @@
       acc = 0;
       game.crashT -= dt;
       updateFx(dt);
-      if (game.crashT <= 0) { game.state = 'done'; endRun(); }
+      if (game.crashT <= 0) afterCrash();
     } else if (game.state === 'menu') {
       // Im Menü läuft die Kamera langsam durch alle Stadien
       game.units += 9 * dt;
@@ -2712,7 +2817,7 @@
   if (TEST) {
     window.__arena = {
       get game() { return game; },
-      save, act, startMatch, persist, checkUnlocks, update,
+      save, act, startMatch, persist, checkUnlocks, update, afterCrash, reviveNow, giveUp, buyToken,
       startBallEvent: () => startBallEvent(VENUES[game.venue].kind),      spawn: (type, lane, z, extra) => addObj(type, lane, z, extra),
       step(seconds, dt = 1 / 60) {
         for (let tt = 0; tt < seconds && game.state === 'run'; tt += dt) update(dt);
