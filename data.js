@@ -16,7 +16,7 @@ window.ARENA_DATA = (() => {
   ];
 
   // Eigenwerbung: erscheint auf einem Teil der Banden (chance = Anteil aller Banden, 0.25 = jede vierte)
-  const HOUSE_AD = { name: 'Arena Rush', short: 'arenarush.de', sub: 'JETZT SPIELEN!', bg: '#0a1633', fg: '#ffd23f', chance: 0.25 };
+  const HOUSE_AD = { name: 'Arena Rush', short: 'arena-rush.de', sub: 'JETZT SPIELEN!', bg: '#0a1633', fg: '#ffd23f', chance: 0.25 };
 
   // Die Strecke führt nacheinander durch diese Stadien (kind: football | ice | basket)
   const VENUES = [
