@@ -15,6 +15,9 @@ window.ARENA_DATA = (() => {
     { name: 'Playafieber', short: 'PLAYA', bg: '#ff6a00', fg: '#ffffff' },
   ];
 
+  // Eigenwerbung: erscheint auf einem Teil der Banden (chance = Anteil aller Banden, 0.25 = jede vierte)
+  const HOUSE_AD = { name: 'Arena Rush', short: 'arenarush.de', sub: 'JETZT SPIELEN!', bg: '#0a1633', fg: '#ffd23f', chance: 0.25 };
+
   // Die Strecke führt nacheinander durch diese Stadien (kind: football | ice | basket)
   const VENUES = [
     {
@@ -307,5 +310,5 @@ window.ARENA_DATA = (() => {
   const UPGRADE_COSTS = [50, 100, 175, 275, 400];
   const MAX_UPGRADE = 5;
 
-  return { SPONSORS, VENUES, CHARACTERS, PICKUPS, GOAL_REWARD, BOOSTERS, REVIVE, SKINS, UPGRADE_COSTS, MAX_UPGRADE, COACH, COACH_TIPS };
+  return { SPONSORS, HOUSE_AD, VENUES, CHARACTERS, PICKUPS, GOAL_REWARD, BOOSTERS, REVIVE, SKINS, UPGRADE_COSTS, MAX_UPGRADE, COACH, COACH_TIPS };
 })();

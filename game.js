@@ -2,7 +2,7 @@
 
 (() => {
   const D = window.ARENA_DATA;
-  const { SPONSORS, VENUES, CHARACTERS, PICKUPS, GOAL_REWARD, BOOSTERS, REVIVE, SKINS, UPGRADE_COSTS, MAX_UPGRADE, COACH, COACH_TIPS } = D;
+  const { SPONSORS, HOUSE_AD, VENUES, CHARACTERS, PICKUPS, GOAL_REWARD, BOOSTERS, REVIVE, SKINS, UPGRADE_COSTS, MAX_UPGRADE, COACH, COACH_TIPS } = D;
 
   const STATS = [
     { key: 'tempo', name: 'Tempo' },
@@ -395,7 +395,7 @@
   }
 
   function obstacleExtra(type) {
-    if (type === 'ad') return { sp: Math.floor(Math.random() * SPONSORS.length) };
+    if (type === 'ad') return Math.random() < HOUSE_AD.chance ? { house: true } : { sp: Math.floor(Math.random() * SPONSORS.length) };
     if (type === 'banner') return { text: pick(BANNER_TEXTS), pal: Math.floor(Math.random() * 2) };
     if (type === 'bench') return { team: pick(['#d63031', '#2e86de', '#8e44ad', '#e67e22']) };
     return {};
@@ -2173,15 +2173,15 @@
 
   const SPRITES = {
     ad(c, o) {
-      const sp = SPONSORS[o.sp || 0];
+      const sp = o.house ? HOUSE_AD : SPONSORS[o.sp || 0];
       shadow(c, 46);
       // Bande als LED-Werbetafel auf Füßen, mit rot-weißem Warnstreifen (= Hindernis, drüberspringen)
       for (const s of [-1, 1]) { rr(c, s * 32 - 5, -6, 10, 6, 2); fs(c, '#555b66', LW / 2); }
       box3d(c, -42, -44, 84, 38, 12, sp.bg);
       rr(c, -37, -40, 74, 24, 3); fs(c, shade(sp.bg, -0.35), LW / 2);
       c.strokeStyle = sp.fg; c.lineWidth = 2; c.stroke();
-      comicText(c, sp.short, 0, -31, 15, sp.fg, 68);
-      const sub = sp.name.indexOf(' ') > 0 ? sp.name.slice(sp.name.indexOf(' ') + 1) : 'ARENA RUSH';
+      comicText(c, sp.short, 0, -31, o.house ? 12 : 15, sp.fg, 68);
+      const sub = sp.sub || (sp.name.indexOf(' ') > 0 ? sp.name.slice(sp.name.indexOf(' ') + 1) : 'ARENA RUSH');
       comicText(c, sub.toUpperCase(), 0, -21, 6.5, '#ffffff', 68);
       for (let i = 0; i < 6; i++) { c.fillStyle = i % 2 ? '#ffffff' : '#ff3b3b'; c.fillRect(-42 + i * 14, -13, 14, 7); }
       rr(c, -42, -13, 84, 7, 2); fs(c, null, LW / 2);
