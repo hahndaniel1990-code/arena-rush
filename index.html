@@ -47,6 +47,7 @@
       <button id="btn-solo" class="primary big">Los geht's!</button>
       <button id="btn-chars">Charaktere, Skins &amp; Upgrades</button>
       <p class="meta">Rekord <b id="start-best">0</b> · 🪙 <b class="taler">0</b> Arena-Taler</p>
+      <p class="meta">💎 Comeback-Token: <b id="start-tokens">0</b> <button id="btn-buy-token" class="link-btn">kaufen</button></p>
 
       <div class="puzzle-box">
         <div id="puzzle" class="puzzle" aria-hidden="true"></div>
@@ -69,6 +70,7 @@
           <li><b>Wischen ↓</b>: ducken (unter Fan-Bannern durch)</li>
           <li>Rasenmäher, Eismaschinen, Putzcrews und Gäste-Bänke: ausweichen!</li>
           <li>In jedem Stadion fällt einmal ein Ball oder Puck vom Himmel: schnapp ihn und <b>wische ↑ zum Torschuss</b>, wenn der Torwart woanders steht.</li>
+          <li><b>Comeback-Token 💎</b> beleben dich nach einem Crash wieder. Sie sind im Spiel ganz selten zu finden oder mit Arena-Talern kaufbar.</li>
           <li>Feder-Schuhe 👟 lassen dich sogar über große Hindernisse springen, das Megafon 📣 verdoppelt deine Punkte.</li>
         </ul>
       </details>
@@ -142,6 +144,18 @@
       <div id="result-unlocks" class="unlocks"></div>
       <button id="btn-rematch" class="primary">Revanche</button>
       <button id="btn-result-menu">Menü</button>
+    </div>
+  </section>
+
+  <!-- Comeback-Token: Wiederbelebung nach einem Crash -->
+  <section id="screen-revive" class="screen hidden">
+    <div class="card">
+      <h2>Weiterlaufen?</h2>
+      <p class="big" id="revive-score">0</p>
+      <p class="meta"><b id="revive-have"></b> · <span id="revive-left"></span></p>
+      <p>Mit einem Comeback-Token läufst du genau hier weiter. Dein Punktestand bleibt.</p>
+      <button id="btn-revive-use" class="primary big">💎 Token einsetzen</button>
+      <button id="btn-revive-quit">Aufgeben</button>
     </div>
   </section>
 
